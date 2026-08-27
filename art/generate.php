@@ -24,10 +24,17 @@ require __DIR__ . '/../php-sigil/bin/_bootstrap.php';
 
 use Laxit\Sigil\Encoder;
 
+/**
+ * Always the canonical model at the repo root, never the copy vendored inside
+ * php-sigil. These are this repo's figures, and Encoder::locateModel() would
+ * otherwise find the submodule's copy first.
+ */
+const MODEL = __DIR__ . '/../model.json';
+
 $number = isset($argv[1]) ? (int) $argv[1] : 4444;
 $outfile = $argv[2] ?? __DIR__ . '/umbral_sigilstone.svg';
 
-$encoder = new Encoder();
+$encoder = new Encoder(MODEL);
 
 /** Fit the glyph's own coordinate space into the medallion. */
 $lines = [];

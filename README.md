@@ -30,18 +30,17 @@ a taller stem carries more digits and stays **one mark**. The range is derived
 from how many places the model declares — up to 18, where exact integers run
 out — so it can never disagree with them.
 
-```text
-  7323          9999            0
-    |         |---|---|         |
-    |\        |   |   |         |
-    | \       |   |   |         |
-    |  \      |   |   |         |
-|---|   \     |---|---|         |
-|   |\        |   |   |         |
-|   | \       |   |   |         |
-|   |  \      |   |   |         |
-|   |   \     |---|---|         |
-```
+<p align="center">
+  <img src="art/showcase-anatomy.svg" alt="7323 built from 7000 + 300 + 20 + 3, one quadrant per digit" width="760">
+</p>
+
+Every digit is a small set of line segments toggled on or off, and every place
+is a corner of the stem — so four digits combine into one mark rather than four
+symbols in a row.
+
+<p align="center">
+  <img src="art/showcase-digits.svg" alt="The ten digit shapes, shown in the ones place" width="900">
+</p>
 
 **A spec repo, with one repo per language attached as submodules.** This repo
 owns the problem — what a glyph *is* — and nothing else. Each implementation is
@@ -118,17 +117,36 @@ silently changes what every digit means.
 
 ## Reading the glyph
 
-Each quadrant around the stem carries one digit place:
+Each place is a *side* of the stem and a *row* down it. The same digit `1`,
+moved around the stem, is what turns `1` into `10`, `100` and `1000`:
 
-```text
- tens | ones          top-right = ones, top-left = tens,
-------|------         bottom-right = hundreds, bottom-left = thousands
-thou. | hund.
-```
+<p align="center">
+  <img src="art/showcase-places.svg" alt="The digit 1 in each of the four places: ones, tens, hundreds, thousands" width="640">
+</p>
 
 A digit turns on some subset of five candidate segments (`top`, `bottom`,
 `outer`, `diagDown`, `diagUp`); `0` turns on none, `9` turns on three and
 closes the box. `SPEC.md` has the full table and the reasoning behind it.
+
+### More than four digits
+
+Two rows is the historical system, not a limit of the geometry. A taller stem
+holds more places, and the result is still **one mark** — not several glyphs
+side by side:
+
+<p align="center">
+  <img src="art/showcase-rows.svg" alt="9999 at two rows, through 1234567890 at five rows, each taller than the last" width="740">
+</p>
+
+### What it is good for
+
+<p align="center">
+  <img src="art/showcase-avatars.svg" alt="Six identicon avatars derived from email addresses" width="1000">
+</p>
+
+Stable, recognizable marks with no image files and nothing stored — see
+[`php-sigil/examples/`](php-sigil/examples) for this and three other worked
+uses.
 
 ## License
 
