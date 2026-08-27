@@ -11,7 +11,9 @@ composer require laxit/sigil
 ```
 
 Packagist is fed by a read-only `git subtree split` mirror of this directory —
-develop here, never in the mirror. See *Publishing from one repo* in
+develop here, never in the mirror. The release step must copy `model.json` into
+the mirror, since a split contains only its own subdirectory and the package
+would otherwise ship with no model to load. See *Publishing from one repo* in
 [`../SPEC.md`](../SPEC.md).
 
 Requires PHP 8.1+. No runtime dependencies.
@@ -56,21 +58,31 @@ $ php bin/demo.php 7323 ascii
 
 ### Geometry
 
-Defaults are `stemHeight=200`, `quadrantWidth=70`, `stemX=100`, `stemTopY=20`
-— the values baked into the golden fixtures. Override them per instance:
+Defaults come from `geometryDefaults` in `model.json` — `stemHeight=200`,
+`quadrantWidth=70`, `stemX=100`, `stemTopY=20`, the values the golden fixtures
+were generated with. Override them per instance:
 
 ```php
 $encoder = new Encoder(stemHeight: 100, quadrantWidth: 35, stemX: 50, stemTopY: 10);
 ```
 
+`Encoder::stem()` returns a positional `[x1, y1, x2, y2]` array, matching the
+fixture format.
+
 ## Architecture
 
 ```
-SegmentModel  the 5 candidate segments + which ones each digit 0-9 turns on   (data only)
-Quadrant      the 4 placements of that model: ones / tens / hundreds / thousands (data only)
-Encoder       number -> digits -> resolved (x1,y1,x2,y2) segment list
+model.json    the definition -- segments, digit map, quadrants, geometry   (at the repo root)
+SegmentModel  typed wrapper over model.json's segments + digitMap
+Quadrant      typed wrapper over model.json's places + quadrants
+Encoder       the generic resolver: model.json -> (x1,y1,x2,y2) segment list
 Renderer/*    segment list -> one specific output format
 ```
+
+None of these classes contain the digit map. They read
+[`../model.json`](../model.json), which is what keeps this package from
+drifting away from the other language implementations. `Encoder::locateModel()`
+resolves it: `SIGIL_MODEL`, then a copy beside `src/`, then the repo root.
 
 Renderers call `Encoder::segmentsFor()` and `Encoder::stem()` and **nothing
 else** — they never touch `SegmentModel` or `Quadrant`. That constraint is what
@@ -98,9 +110,9 @@ SIGIL_FIXTURES=/path/to/vectors.json composer test
 
 ## Changing the glyph
 
-`SegmentModel::DIGITS` is the one table that defines what a glyph looks like.
-If you change it — or the default geometry — the fixtures must be regenerated
-in the same change:
+[`../model.json`](../model.json) is the one file that defines what a glyph
+looks like — for this package and every other language implementation. If you
+change it, the fixtures must be regenerated in the same change:
 
 ```bash
 php bin/vectors.php            # rewrite ../fixtures/vectors.json

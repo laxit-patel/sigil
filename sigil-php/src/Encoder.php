@@ -5,62 +5,91 @@ declare(strict_types=1);
 namespace Cistercian;
 
 use InvalidArgumentException;
+use JsonException;
+use RuntimeException;
 
 /**
- * number -> digits -> resolved line segments.
+ * The generic resolver: model.json (Tier 1) -> glyph objects (Tier 2).
  *
- * This is the whole number logic of Sigil. Renderers call segmentsFor() and
- * stem() and nothing else; they never touch SegmentModel or Quadrant.
+ * This class knows no Cistercian-specific tables. It is pure arithmetic and
+ * interpolation over whatever model.json declares, which is why it stays
+ * small and why a wrong digit map cannot hide in it -- the data lives in one
+ * JSON file every language implementation reads, not retyped per port.
+ *
+ * Renderers call segmentsFor() and stem() and nothing else; they never touch
+ * SegmentModel or Quadrant.
  *
  * @phpstan-type SegmentArray array{
  *     quadrant: string, segment: string,
  *     x1: int|float, y1: int|float, x2: int|float, y2: int|float
  * }
- * @phpstan-type Line array{x1: int|float, y1: int|float, x2: int|float, y2: int|float}
  */
 final class Encoder
 {
-    public const MIN = 0;
-    public const MAX = 9999;
+    public readonly SegmentModel $segmentModel;
+    public readonly Quadrant $quadrant;
 
-    /** Geometry defaults baked into sigil/fixtures/vectors.json. */
-    public const DEFAULT_STEM_HEIGHT = 200;
-    public const DEFAULT_QUADRANT_WIDTH = 70;
-    public const DEFAULT_STEM_X = 100;
-    public const DEFAULT_STEM_TOP_Y = 20;
+    public readonly int $min;
+    public readonly int $max;
 
+    public readonly int|float $stemHeight;
+    public readonly int|float $quadrantWidth;
+    public readonly int|float $stemX;
+    public readonly int|float $stemTopY;
+
+    /**
+     * Geometry arguments override model.json's `geometryDefaults`; leave them
+     * null to use the defaults the fixtures were generated with.
+     */
     public function __construct(
-        public readonly int|float $stemHeight = self::DEFAULT_STEM_HEIGHT,
-        public readonly int|float $quadrantWidth = self::DEFAULT_QUADRANT_WIDTH,
-        public readonly int|float $stemX = self::DEFAULT_STEM_X,
-        public readonly int|float $stemTopY = self::DEFAULT_STEM_TOP_Y,
+        ?string $modelPath = null,
+        int|float|null $stemHeight = null,
+        int|float|null $quadrantWidth = null,
+        int|float|null $stemX = null,
+        int|float|null $stemTopY = null,
     ) {
+        $model = self::loadModel($modelPath ?? self::locateModel());
+
+        $this->segmentModel = new SegmentModel($model);
+        $this->quadrant = new Quadrant($model);
+
+        $this->min = $model['range']['min'];
+        $this->max = $model['range']['max'];
+
+        $g = $model['geometryDefaults'];
+        $this->stemHeight = $stemHeight ?? $g['stemHeight'];
+        $this->quadrantWidth = $quadrantWidth ?? $g['quadrantWidth'];
+        $this->stemX = $stemX ?? $g['stemX'];
+        $this->stemTopY = $stemTopY ?? $g['stemTopY'];
     }
 
     /**
-     * @return array{ones: int, tens: int, hundreds: int, thousands: int}
+     * @return array<string, int>
      */
     public function digitsOf(int $number): array
     {
-        if ($number < self::MIN || $number > self::MAX) {
+        if ($number < $this->min || $number > $this->max) {
             throw new InvalidArgumentException(
-                sprintf('Sigil encodes %d-%d, got %d.', self::MIN, self::MAX, $number)
+                sprintf('Sigil encodes %d-%d, got %d.', $this->min, $this->max, $number)
             );
         }
 
-        return [
-            Quadrant::ONES      => $number % 10,
-            Quadrant::TENS      => intdiv($number, 10) % 10,
-            Quadrant::HUNDREDS  => intdiv($number, 100) % 10,
-            Quadrant::THOUSANDS => intdiv($number, 1000) % 10,
-        ];
+        $digits = [];
+        $divisor = 1;
+
+        foreach ($this->quadrant->names as $place) {
+            $digits[$place] = intdiv($number, $divisor) % 10;
+            $divisor *= 10;
+        }
+
+        return $digits;
     }
 
     /**
      * Active segments in global coordinates.
      *
-     * Order is canonical and fixture-significant: quadrants in Quadrant::ALL
-     * order, segments within a quadrant in SegmentModel::KEYS order.
+     * Order is canonical and fixture-significant: quadrants in model.json's
+     * `places` order, segments within a quadrant in `segments` order.
      *
      * @return list<SegmentArray>
      */
@@ -73,11 +102,13 @@ final class Encoder
 
         $segments = [];
 
-        foreach (Quadrant::ALL as $quadrant => [, $flipX, $flipY]) {
-            $active = SegmentModel::DIGITS[$digits[$quadrant]];
+        foreach ($this->quadrant->names as $place) {
+            $active = $this->segmentModel->segmentsForDigit($digits[$place]);
             if ($active === []) {
                 continue;
             }
+
+            ['flipX' => $flipX, 'flipY' => $flipY] = $this->quadrant->placement($place);
 
             $topY = $flipY ? $midY : $this->stemTopY;
             $botY = $flipY ? $bottomY : $midY;
@@ -85,15 +116,11 @@ final class Encoder
                 ? $this->stemX - $this->quadrantWidth
                 : $this->stemX + $this->quadrantWidth;
 
-            foreach (SegmentModel::KEYS as $key) {
-                if (!in_array($key, $active, true)) {
-                    continue;
-                }
-
-                [$lx1, $ly1, $lx2, $ly2] = SegmentModel::ENDPOINTS[$key];
+            foreach ($active as $key) {
+                [$lx1, $ly1, $lx2, $ly2] = $this->segmentModel->endpoints[$key];
 
                 $segments[] = [
-                    'quadrant' => $quadrant,
+                    'quadrant' => $place,
                     'segment'  => $key,
                     'x1' => $this->lerpX($lx1, $outerX),
                     'y1' => $this->lerpY($ly1, $topY, $botY),
@@ -107,18 +134,61 @@ final class Encoder
     }
 
     /**
-     * The vertical stem every glyph shares, including zero.
+     * The vertical stem every glyph shares, including zero, as [x1,y1,x2,y2].
      *
-     * @return Line
+     * @return array{int|float, int|float, int|float, int|float}
      */
     public function stem(): array
     {
         return [
-            'x1' => $this->norm($this->stemX),
-            'y1' => $this->norm($this->stemTopY),
-            'x2' => $this->norm($this->stemX),
-            'y2' => $this->norm($this->stemTopY + $this->stemHeight),
+            $this->norm($this->stemX),
+            $this->norm($this->stemTopY),
+            $this->norm($this->stemX),
+            $this->norm($this->stemTopY + $this->stemHeight),
         ];
+    }
+
+    /**
+     * Where model.json is, in order of preference: an explicit path, the
+     * SIGIL_MODEL environment variable, a copy shipped inside this package
+     * (how the Packagist split mirror gets one), then the repo root.
+     */
+    public static function locateModel(): string
+    {
+        $candidates = array_filter([
+            getenv('SIGIL_MODEL') ?: null,
+            __DIR__ . '/../model.json',
+            __DIR__ . '/../../model.json',
+        ]);
+
+        foreach ($candidates as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        throw new RuntimeException(
+            'Cannot find model.json. It lives at the repo root; set SIGIL_MODEL to '
+            . 'point somewhere else.'
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function loadModel(string $path): array
+    {
+        $raw = @file_get_contents($path);
+
+        if ($raw === false) {
+            throw new RuntimeException("Cannot read model.json at {$path}.");
+        }
+
+        try {
+            return json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw new RuntimeException("model.json at {$path} is not valid JSON: {$e->getMessage()}", 0, $e);
+        }
     }
 
     private function lerpX(int $local, int|float $outerX): int|float

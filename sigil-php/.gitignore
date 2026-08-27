@@ -2,3 +2,7 @@
 /.phpunit.cache/
 /composer.lock
 /.phpunit.result.cache
+
+# A release copy of the root model.json may be staged here for the Packagist
+# split mirror. Never commit it -- a second copy in git is a copy that drifts.
+/model.json

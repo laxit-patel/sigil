@@ -20,8 +20,9 @@ sits next to that definition rather than a copy of it.
 
 ```
 SPEC.md                 # this document
+model.json              # Tier 1 -- the declarative definition every implementation loads
 fixtures/
-  vectors.json          # golden test vectors every implementation must match exactly
+  vectors.json          # Tier 2 -- resolved output of model.json for 15 numbers
 AGENTS.md               # read-this-first for anyone writing an implementation
 CLAUDE.md               # -> AGENTS.md
 llms.txt                # short machine-readable project summary
@@ -74,6 +75,14 @@ git push git@github.com:laxit/sigil-php.git php-release:main
 The mirror is an artifact. Nobody develops in it, and it never diverges,
 because it is regenerated from this repo on every release.
 
+One consequence of Tier 1: a split mirror contains only its own subdirectory,
+so `model.json` — which lives at the repo root — would not travel with it, and
+the published package would have no model to load. **The release step must copy
+`model.json` into the mirror**, and an implementation should look for it beside
+its own source before falling back to the repo root. `sigil-php`'s
+`Encoder::locateModel()` does exactly that, and honours `SIGIL_MODEL` for
+anything unusual.
+
 ## Core principle: model/renderer separation
 
 ```
@@ -106,18 +115,28 @@ of that quadrant; `(1,1)` is the far outer corner.
 
 ### Digit → active segments
 
-| digit | segments on |
-|---|---|
-| 0 | (none) |
-| 1 | `top` |
-| 2 | `bottom` |
-| 3 | `diagDown` |
-| 4 | `diagUp` |
-| 5 | `top`, `bottom` |
-| 6 | `outer` |
-| 7 | `top`, `outer` |
-| 8 | `bottom`, `outer` |
-| 9 | `top`, `bottom`, `outer` |
+Encoded as the seven-segment-display convention rather than named arrays:
+each digit is one small integer, one bit per candidate segment
+(`top=1, bottom=2, outer=4, diagDown=8, diagUp=16`), matching the order
+`segments` are declared in `model.json`. `digitMap` in the IR is simply
+`[0, 1, 2, 8, 16, 3, 4, 5, 6, 7]` — index = digit, value = bitmask.
+
+| digit | segments on | bitmask |
+|---|---|---|
+| 0 | (none) | `0` |
+| 1 | `top` | `1` |
+| 2 | `bottom` | `2` |
+| 3 | `diagDown` | `8` |
+| 4 | `diagUp` | `16` |
+| 5 | `top`, `bottom` | `3` |
+| 6 | `outer` | `4` |
+| 7 | `top`, `outer` | `5` |
+| 8 | `bottom`, `outer` | `6` |
+| 9 | `top`, `bottom`, `outer` | `7` |
+
+The bitmask encoding is not a Sigil invention — it is what seven-segment
+display firmware has used for decades (one small integer per digit, one bit
+per physical segment), applied to five candidate segments instead of seven.
 
 This table is a structurally faithful, self-consistent design (place value
 per quadrant, digits built by toggling a small fixed segment set, 9 forming
@@ -153,7 +172,59 @@ Two consequences fall out of the geometry and are intentional, not bugs:
 | `hundreds` | 100 | no | yes |
 | `thousands` | 1000 | yes | yes |
 
+## Intermediate representation
+
+The tables above aren't meant to be hand-retyped into each language as
+classes/structs — that's how a PHP implementation and a JS implementation
+quietly drift apart. Instead there are two IRs, for two different jobs:
+
+**Tier 1 — `model.json` (declarative source of truth).** The segment shapes,
+digit map, quadrant transforms and default geometry from the tables above, as
+one JSON file at the repo root. Every language implementation *loads* this
+file; none of them hardcode the tables. Changing a digit's shape is a one-line
+edit in one file, and every implementation picks it up instead of needing the
+same fix applied N times.
+
+**Tier 2 — glyph objects (resolved output, wire format).** The
+`{quadrant, segment, x1, y1, x2, y2}` shape used in `fixtures/vectors.json`.
+This is what a *renderer* consumes, and it is a legitimate transfer format on
+its own — a PHP backend can resolve a number and hand a JS frontend just this
+JSON over an API, and the frontend draws it with zero Cistercian-specific
+logic, because by this stage it is just "draw these lines." Tier 2 does not
+require Tier 1 on the consuming side; Tier 1 is only needed by whatever does
+the resolving.
+
+Every implementation provides one small, generic **resolver** —
+`digitsOf(model, number)` and `segmentsFor(model, number)` — that reads Tier 1
+and produces Tier 2. This is intentionally the *only* thing ported per
+language: pure arithmetic and interpolation, free of Cistercian-specific
+tables, so it stays tiny and cannot hide the kind of bug a hand-retyped digit
+map can.
+
+This is verified, not proposed. A standalone PHP resolver reading only
+`model.json`, with no hardcoded table, reproduces every entry in
+`fixtures/vectors.json` exactly, and `sigil-php` itself is built this way —
+`SegmentModel` and `Quadrant` are typed wrappers over the JSON, not tables.
+
+### The `segments` array order is load-bearing twice
+
+Reordering the `segments` array in `model.json` is **not** a cosmetic edit. That
+order defines *both*:
+
+1. the bit position of each segment in `digitMap`, and
+2. the order the resolver emits segments in.
+
+So moving one entry silently changes what every digit means *and* breaks
+fixture ordering. Add new segments at the end; never reorder in place.
+
 ## Encoder algorithm
+
+An implementation's `Encoder` loads `model.json` and delegates to the generic
+resolver. `SegmentModel`/`Quadrant` equivalents are thin typed wrappers around
+slices of that JSON — validation and convenience, never a second copy of the
+data. An implementation that hardcodes the tables is not wrong on output, but
+it has opted out of the mechanism that keeps the languages from drifting, and
+it will be the one that drifts.
 
 **`digitsOf(number: int) -> {ones, tens, hundreds, thousands}`**
 - Validate `0 <= number <= 9999`, else raise/throw.
@@ -174,13 +245,15 @@ Two consequences fall out of the geometry and are intentional, not bugs:
 order-sensitive. Two orderings are therefore part of the contract:
 
 - **Quadrants**, outer loop: `ones`, `tens`, `hundreds`, `thousands` — the
-  order of the quadrant table above.
+  order of `places` in `model.json`.
 - **Segments** within a quadrant, inner loop: `top`, `bottom`, `outer`,
-  `diagDown`, `diagUp` — the order of the candidate-segment table above,
-  *not* the order the digit table happens to list them in.
+  `diagDown`, `diagUp` — the order of `segments` in `model.json`, *not* the
+  order the digit table happens to list them in.
 
-Both orders are restated in `fixtures/vectors.json` as `quadrantOrder` and
-`segmentOrder` so a port can assert against them directly.
+Neither order is restated anywhere else: `model.json` declares both, and it is
+the only place they may be defined. See *The `segments` array order is
+load-bearing twice* above for why that array in particular must never be
+reordered in place.
 
 ### Numeric representation
 
@@ -215,9 +288,9 @@ rather than reusing the continuous SVG-scale coordinates).
 
 ```
 src/
-  SegmentModel.php   # data only, no logic — Cistercian\SegmentModel
-  Quadrant.php       # data only — Cistercian\Quadrant
-  Encoder.php        # number -> digits -> resolved segments — Cistercian\Encoder
+  SegmentModel.php   # typed wrapper over model.json's segments + digitMap
+  Quadrant.php       # typed wrapper over model.json's places + quadrants
+  Encoder.php        # the generic resolver: model.json -> glyph objects
   Renderer/
     SvgRenderer.php
     AsciiRenderer.php
@@ -236,13 +309,20 @@ furthest along owns the generator; today that is PHP.
 
 ## Golden test vectors
 
-`fixtures/vectors.json` holds real, verified `{number, digits, stem,
-segments}` entries — not illustrative examples, actual encoder output —
-for a set chosen to exercise every segment shape at least once (`1`, `6`,
-`9` in the ones place covers `top`, `outer`, and the closed `9` box) and
-every quadrant transform at least once (`10`, `100`, `1000`), plus two
-composite numbers (`7323`, `9999`) as end-to-end checks. `0` confirms the
-empty case (stem only, zero segments).
+`fixtures/vectors.json` holds real, verified `{number, digits, stem, segments}`
+entries — actual resolver output, not illustrative examples — for 15 numbers:
+
+- **`0`–`9` as bare ones-place vectors.** Every digit's exact segment
+  combination is guaranteed by construction rather than by coincidence. Earlier
+  drafts of this set relied on composites happening to contain a digit; that
+  left `4`, `5` and `8` untested anywhere, which meant `diagUp` was never
+  exercised at all and a wrong mapping for it would have passed every fixture.
+- **`10` / `100` / `1000`** to isolate the quadrant transforms independently of
+  digit shape (all digit `1`, whose shape is already covered above).
+- **`7323` / `9999`** as composite end-to-end checks.
+
+`stem` is a positional `[x1, y1, x2, y2]` array, and `0` confirms the empty
+case — stem only, zero segments.
 
 It is generated, never hand-edited: `sigil-php/bin/vectors.php` writes it,
 and `php sigil-php/bin/vectors.php --check` exits non-zero when the committed
@@ -256,10 +336,12 @@ hand-written per-language test data.
 
 ## Language ports
 
-Only `SegmentModel`, `Quadrant`, and `Encoder` (or each language's
-equivalent) need porting — under ~150 lines total, zero dependencies.
-Renderers are rewritten idiomatically per implementation, not translated
-line-by-line, since e.g. Canvas only makes sense in `sigil-js`.
+With the IR in place, porting means: load `model.json`, implement the generic
+resolver once, done. `SegmentModel` and `Quadrant` are not hand-retyped per
+language, because the data they would hold lives in `model.json` instead — so
+what is actually ported is arithmetic, not tables. Renderers are still
+rewritten idiomatically per implementation, not translated line-by-line, since
+e.g. Canvas only makes sense in `sigil-js`.
 
 1. **`sigil-php`** first — typed properties/readonly classes, `match`, `laxit/sigil` on Packagist.
 2. **`sigil-js`** next — this is where Canvas and the web component actually belong.

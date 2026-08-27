@@ -34,17 +34,17 @@ final class VectorsTest extends TestCase
         return $cases;
     }
 
-    public function testFixturesUseTheDefaultGeometry(): void
+    public function testEncoderUsesTheGeometryTheFixturesWereGeneratedWith(): void
     {
         $encoder = new Encoder();
-        $geometry = self::load()['geometry'];
 
-        // If this fails, the fixtures were generated with different defaults
-        // and every coordinate assertion below is meaningless.
-        self::assertSame($geometry['stemHeight'], $encoder->stemHeight);
-        self::assertSame($geometry['quadrantWidth'], $encoder->quadrantWidth);
-        self::assertSame($geometry['stemX'], $encoder->stemX);
-        self::assertSame($geometry['stemTopY'], $encoder->stemTopY);
+        // Not redundant with the coordinate assertions below: if model.json's
+        // geometryDefaults are edited without regenerating the fixtures, this
+        // names the cause instead of leaving 15 coordinate failures to read.
+        self::assertSame(200, $encoder->stemHeight);
+        self::assertSame(70, $encoder->quadrantWidth);
+        self::assertSame(100, $encoder->stemX);
+        self::assertSame(20, $encoder->stemTopY);
     }
 
     /**
@@ -91,7 +91,7 @@ final class VectorsTest extends TestCase
     }
 
     /**
-     * @return array{geometry: array<string, int|float>, vectors: list<array<string, mixed>>}
+     * @return array{vectors: list<array<string, mixed>>}
      */
     private static function load(): array
     {

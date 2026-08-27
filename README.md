@@ -28,7 +28,8 @@ that definition rather than a copy of it.
 | Path | What it is |
 |---|---|
 | [`SPEC.md`](SPEC.md) | The specification. Data model, digit→segment table, quadrant transforms, encoder algorithm, renderer contract. |
-| [`fixtures/vectors.json`](fixtures/vectors.json) | **The contract.** Real encoder output for 9 numbers. An implementation is spec-compliant exactly when it reproduces these. |
+| [`model.json`](model.json) | **Tier 1 — the definition.** Segment shapes, digit map, quadrant transforms, default geometry. Every implementation *loads* this; none retype it. |
+| [`fixtures/vectors.json`](fixtures/vectors.json) | **Tier 2 — the contract.** Resolved output for 15 numbers. An implementation is spec-compliant exactly when it reproduces these. |
 | [`AGENTS.md`](AGENTS.md) | Read-this-first for anyone (or anything) about to write an implementation. |
 | [`llms.txt`](llms.txt) | Machine-readable project summary. |
 | [`sigil-php/`](sigil-php) | PHP implementation — `laxit/sigil` on Packagist. |
@@ -58,17 +59,28 @@ mirror. See *Publishing from one repo* in [`SPEC.md`](SPEC.md).
 
 ## The one rule
 
-The contract between implementations is `fixtures/vectors.json`, **not the
-prose**.
+One file defines the glyph. Every language reads it.
+
+```
+model.json  ──loaded by──>  each implementation's resolver  ──produces──>  glyph objects
+     │                                                                          │
+     └────────── regenerates ──────────> fixtures/vectors.json <── must match ───┘
+```
+
+`model.json` is the definition; `fixtures/vectors.json` is the proof each
+implementation read it correctly. Changing a digit's shape is a one-line edit
+in one file — not the same fix applied four times.
 
 ```bash
-php sigil-php/bin/vectors.php            # regenerate the fixtures
+php sigil-php/bin/vectors.php            # regenerate the fixtures from model.json
 php sigil-php/bin/vectors.php --check    # CI: fail if the committed fixtures are stale
 ```
 
-Changing that file is a breaking change for every language here at once —
-regenerate it in the same commit as the change that caused it, or the
-implementations drift apart silently.
+Editing `model.json` is a breaking change for every language here at once —
+regenerate the fixtures in the same commit, or the implementations drift apart
+silently. And never reorder its `segments` array: that order is both the bit
+position of each segment in `digitMap` and the emit order, so moving an entry
+silently changes what every digit means.
 
 ## Reading the glyph
 

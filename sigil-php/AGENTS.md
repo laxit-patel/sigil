@@ -6,18 +6,22 @@ anything under `src/`.
 
 ## The rule that outranks everything else
 
-`../fixtures/vectors.json` is the contract shared by every language in this
-repo. This package is correct exactly when `tests/VectorsTest.php` passes
-against it.
+The digit map is **not in this package**. It lives in `../model.json`, which
+this package loads. `../fixtures/vectors.json` is the contract shared by every
+language here, and this package is correct exactly when `tests/VectorsTest.php`
+passes against it.
 
-If you change `SegmentModel::DIGITS`, `Quadrant::ALL`, the segment endpoints,
-the canonical ordering, or the default geometry, you have changed the contract
-for **every** implementation here — PHP, JS, Python, everything planned. Then:
+If you change `../model.json` — segment endpoints, the digit map, the quadrant
+transforms, the default geometry — you have changed the contract for **every**
+implementation here, PHP, JS, Python, everything planned. Then:
 
 1. `php bin/vectors.php` — regenerate `../fixtures/vectors.json`.
 2. `composer test` — confirm the suite still passes.
-3. Commit the fixtures **in the same commit**, and say in the message that it
-   is a breaking change for the other implementations.
+3. Commit both **in the same commit**, and say in the message that it is a
+   breaking change for the other implementations.
+
+Never reorder `model.json`'s `segments` array: that order is both the bit
+position of each segment in `digitMap` and the emit order. Append only.
 
 Never hand-edit the fixtures, and never adjust a test to match new output when
 the fixture says otherwise — that is the failure mode this whole setup exists
@@ -25,8 +29,11 @@ to prevent.
 
 ## Architecture constraints
 
-- `SegmentModel` and `Quadrant` are **data only**. No logic, no methods.
-- `Encoder` is the only place number logic lives.
+- `SegmentModel` and `Quadrant` are **typed wrappers over `model.json`**, not
+  tables. If you find yourself writing a segment or digit literal into either
+  of them, stop — that data belongs in the JSON.
+- `Encoder` is the generic resolver and the only place number logic lives. It
+  is deliberately free of Cistercian-specific constants.
 - **Renderers use `Encoder::segmentsFor()` and `Encoder::stem()` and nothing
   else.** Importing `SegmentModel` or `Quadrant` from `src/Renderer/` fails
   `RendererTest::testRenderersDoNotReachIntoTheNumberLogic`. If a renderer
@@ -52,7 +59,7 @@ cd sigil-php                   # every command below runs from this directory
 composer install
 composer test                  # phpunit, including the fixture compliance suite
 php bin/demo.php 7323 all      # render one glyph in every format
-php bin/vectors.php            # regenerate ../fixtures/vectors.json
+php bin/vectors.php            # regenerate ../fixtures/vectors.json from ../model.json
 php bin/vectors.php --check    # CI: fail if the committed fixtures are stale
 ```
 

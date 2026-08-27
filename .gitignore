@@ -9,3 +9,7 @@
 
 # Language directories carry their own .gitignore for build output
 # (sigil-php/vendor, etc.) so each stays self-contained.
+
+# Scratch inbox for documents handed to the project. Content gets absorbed
+# into SPEC.md / model.json / fixtures, so the drop-box itself isn't tracked.
+docs/

@@ -31,12 +31,14 @@ final class SvgRenderer
 
         [$minX, $minY, $width, $height] = $this->viewBox($stem, $segments);
 
+        [$sx1, $sy1, $sx2, $sy2] = $stem;
+
         $lines = [sprintf(
             '  <line x1="%s" y1="%s" x2="%s" y2="%s" stroke-width="%s"/>',
-            $this->num($stem['x1']),
-            $this->num($stem['y1']),
-            $this->num($stem['x2']),
-            $this->num($stem['y2']),
+            $this->num($sx1),
+            $this->num($sy1),
+            $this->num($sx2),
+            $this->num($sy2),
             $this->num($this->stemStrokeWidth),
         )];
 
@@ -71,14 +73,16 @@ final class SvgRenderer
     }
 
     /**
-     * @param array{x1: int|float, y1: int|float, x2: int|float, y2: int|float} $stem
+     * @param array{int|float, int|float, int|float, int|float} $stem
      * @param list<array{quadrant: string, segment: string, x1: int|float, y1: int|float, x2: int|float, y2: int|float}> $segments
      * @return array{float, float, float, float}
      */
     private function viewBox(array $stem, array $segments): array
     {
-        $xs = [$stem['x1'], $stem['x2']];
-        $ys = [$stem['y1'], $stem['y2']];
+        [$sx1, $sy1, $sx2, $sy2] = $stem;
+
+        $xs = [$sx1, $sx2];
+        $ys = [$sy1, $sy2];
 
         foreach ($segments as $segment) {
             $xs[] = $segment['x1'];

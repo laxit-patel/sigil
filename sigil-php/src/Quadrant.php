@@ -4,30 +4,49 @@ declare(strict_types=1);
 
 namespace Cistercian;
 
+use InvalidArgumentException;
+
 /**
- * The four placements of the segment model around the stem.
+ * Typed wrapper around the `places` and `quadrants` halves of model.json.
  *
- * Data only, no logic. Order is canonical: Encoder walks quadrants in this
- * order and fixtures depend on it.
+ * Holds no table of its own -- the four placements live in model.json at the
+ * repo root. `places` order is the order Encoder walks quadrants in, and the
+ * fixtures depend on it.
  *
- * Renderers must not read this class. They consume Encoder output only.
+ * Renderers must not use this class. They consume Encoder output only.
  */
 final class Quadrant
 {
-    public const ONES = 'ones';
-    public const TENS = 'tens';
-    public const HUNDREDS = 'hundreds';
-    public const THOUSANDS = 'thousands';
+    /** @var list<string> Quadrant names, least significant place first. */
+    public readonly array $names;
+
+    /** @var array<string, array{placeValue: int, flipX: bool, flipY: bool}> */
+    public readonly array $placements;
 
     /**
-     * name => [place value, flipX (left of stem), flipY (below midpoint)]
-     *
-     * @var array<string, array{int, bool, bool}>
+     * @param array<string, mixed> $model Decoded model.json.
      */
-    public const ALL = [
-        self::ONES      => [1,    false, false],
-        self::TENS      => [10,   true,  false],
-        self::HUNDREDS  => [100,  false, true],
-        self::THOUSANDS => [1000, true,  true],
-    ];
+    public function __construct(array $model)
+    {
+        if (!isset($model['places'], $model['quadrants'])) {
+            throw new InvalidArgumentException('model.json is missing "places" or "quadrants".');
+        }
+
+        foreach ($model['places'] as $place) {
+            if (!isset($model['quadrants'][$place])) {
+                throw new InvalidArgumentException(
+                    sprintf('model.json lists place "%s" with no matching quadrant.', $place)
+                );
+            }
+        }
+
+        $this->names = $model['places'];
+        $this->placements = $model['quadrants'];
+    }
+
+    /** @return array{placeValue: int, flipX: bool, flipY: bool} */
+    public function placement(string $name): array
+    {
+        return $this->placements[$name];
+    }
 }

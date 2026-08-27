@@ -28,8 +28,8 @@ final class DxfRenderer
         $out = $this->pair(0, 'SECTION')
             . $this->pair(2, 'ENTITIES');
 
-        $stem = $this->encoder->stem();
-        $out .= $this->lineEntity($stem['x1'], $stem['y1'], $stem['x2'], $stem['y2']);
+        [$sx1, $sy1, $sx2, $sy2] = $this->encoder->stem();
+        $out .= $this->lineEntity($sx1, $sy1, $sx2, $sy2);
 
         foreach ($this->encoder->segmentsFor($number) as $segment) {
             $out .= $this->lineEntity(
