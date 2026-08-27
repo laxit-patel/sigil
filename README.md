@@ -12,6 +12,8 @@ Four digits by default, more on request.
 > ink, or in cut metal.*
 
 [![CI](https://github.com/laxit-patel/sigil/actions/workflows/ci.yml/badge.svg)](https://github.com/laxit-patel/sigil/actions/workflows/ci.yml)
+[![laxit/sigil](https://img.shields.io/packagist/v/laxit/sigil?label=laxit%2Fsigil&logo=packagist&logoColor=white&color=6f5fc0)](https://packagist.org/packages/laxit/sigil)
+[![License](https://img.shields.io/badge/license-MIT-6f5fc0)](LICENSE)
 
 ---
 
