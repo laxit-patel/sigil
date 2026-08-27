@@ -43,7 +43,7 @@ sigil/                    <- this repo: the definition, and nothing else
 - **`php-sigil`** — PHP, published as `laxit/sigil` on Packagist. First
   delivery target; the spec below is written PHP-first but every construct
   maps directly onto any language.
-- **`js-sigil`** — JS/TS, published as `@laxit/sigil` on npm. Home of the
+- **`js-sigil`** — JS/TS, published as `@laxit-patel/sigil` on npm. Home of the
   Canvas renderer and the `<sigil-glyph value="1234">` web component, since
   those only make sense in a browser. Zero dependencies.
 - **`py-sigil`** *(future)* — Python. Useful anywhere the glyph needs to
@@ -84,7 +84,7 @@ Each implementation publishes **directly from its own repo** — a manifest at
 its repository root is what registries expect, so there is nothing to
 generate, mirror or split. `php-sigil` has `composer.json` at its root and is
 submitted to Packagist as `laxit/sigil`; `js-sigil` publishes to npm as
-`@laxit/sigil` the same way.
+`@laxit-patel/sigil` the same way.
 
 Versions are per implementation. `php-sigil` tags `v1.2.0` in its own repo
 without JS or Python having any opinion about it, and this repo's submodule

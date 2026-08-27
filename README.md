@@ -64,7 +64,7 @@ checked out here so the whole project reads as one thing.
 | Repo | Package | Status | Renderers |
 |---|---|---|---|
 | [`php-sigil`](https://github.com/laxit-patel/php-sigil) | `laxit/sigil` | working | SVG, ASCII, DXF |
-| [`js-sigil`](https://github.com/laxit-patel/js-sigil) | `@laxit/sigil` | working | SVG, Canvas, ASCII, `<sigil-glyph>` |
+| [`js-sigil`](https://github.com/laxit-patel/js-sigil) | `@laxit-patel/sigil` | working | SVG, Canvas, ASCII, `<sigil-glyph>` |
 | `py-sigil` | PyPI | planned | server-side generation |
 | `cli-sigil` | binary | planned | single dependency-free binary (Go/Rust) |
 
