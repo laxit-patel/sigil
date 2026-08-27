@@ -1,8 +1,9 @@
 # Sigil
 
-> Sigil turns an integer (0-9999) into one recognizable Cistercian-style
-> glyph: a single vertical stem plus a small set of toggled line segments,
-> one quadrant per digit place. The number logic is ~150 lines with zero
+> Sigil turns an integer into one recognizable Cistercian-style glyph: a
+> single vertical stem plus a small set of toggled line segments, one quadrant
+> per digit place. Four digits is the historical default; the range is derived
+> from the model, so a taller stem carries more digits as one mark. The number logic is ~150 lines with zero
 > dependencies; output formats (SVG, ASCII, DXF, Canvas, font, audio, STL)
 > are thin renderers over one segment list. One repo: the spec and the
 > golden fixtures at the root, each language implementation beside them.

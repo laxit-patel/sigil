@@ -1,10 +1,12 @@
 # Sigil — spec
 
-A number turned into one recognizable mark. Sigil takes an integer
-(`0-9999`) and produces a Cistercian-style glyph — one stem plus a small
-set of toggled line segments per digit place — through whatever output
-format a given delivery needs: SVG, ASCII, DXF, Canvas, a font, audio,
-STL, and so on.
+A number turned into one recognizable mark. Sigil takes an integer and
+produces a Cistercian-style glyph — one stem plus a small set of toggled line
+segments per digit place — through whatever output format a given delivery
+needs: SVG, ASCII, DXF, Canvas, a font, audio, STL, and so on.
+
+Four digits (`0-9999`) is the historical system and the default; the range is
+derived from how many places the model declares, so it is not a fixed limit.
 
 This document is the shared source of truth. Every implementation in this
 repo (PHP first, others later) builds against it and is validated against

@@ -4,7 +4,8 @@
 
 # 💜 Umbral Sigilstone
 
-**Sigil** — turns any integer `0-9999` into one recognizable Cistercian-style glyph.
+**Sigil** — turns an integer into one recognizable Cistercian-style glyph.
+Four digits by default, more on request.
 
 > *The Umbral Sigilstone presses a number into a single struck mark: one stem
 > and a handful of strokes, identical everywhere it is struck — in pixels, in
