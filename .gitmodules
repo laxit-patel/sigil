@@ -1,0 +1,3 @@
+[submodule "php-sigil"]
+	path = php-sigil
+	url = https://github.com/laxit-patel/php-sigil.git
