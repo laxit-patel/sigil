@@ -4,85 +4,92 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The implementations live in their own repos, so drift can appear here
+  # without anything being pushed to this one.
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  fixtures:
-    name: Fixtures match model.json
+  drift:
+    name: Implementations match the canonical model
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
-          coverage: none
+          submodules: recursive
 
-      # The contract check. model.json is the definition; fixtures/vectors.json
-      # is the resolved output. If someone edits the model and forgets to
-      # regenerate, every language implementation drifts at once -- so this
-      # fails the build rather than waiting for a port to disagree.
-      - name: fixtures/vectors.json is not stale
-        run: php sigil-php/bin/vectors.php --check
-
-  php:
-    name: sigil-php (PHP ${{ matrix.php }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ['8.1', '8.2', '8.3', '8.4']
-    defaults:
-      run:
-        working-directory: sigil-php
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          coverage: none
-
-      - name: Validate composer.json
-        run: composer validate --strict --no-check-publish
-
-      - name: Install dependencies
-        uses: ramsey/composer-install@v3
-        with:
-          working-directory: sigil-php
-
-      # Includes VectorsTest, which replays ../fixtures/vectors.json. That is
-      # the definition of "spec-compliant" for every language here.
-      - name: Test
-        run: composer test
-
-  examples:
-    name: Examples still run
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: sigil-php
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          coverage: none
-
-      - name: Install dependencies
-        uses: ramsey/composer-install@v3
-        with:
-          working-directory: sigil-php
-
-      # Examples are documentation, and documentation that no longer runs is
-      # worse than none. They are cheap to execute, so they are checked.
-      - name: Run every example
+      # This repo owns model.json and fixtures/vectors.json. Each language
+      # implementation vendors a copy so it can be installed and tested
+      # standalone -- which means a copy that can drift. Catching that is this
+      # repo's job, because this repo is where the definition lives.
+      - name: Every implementation vendors the canonical model and fixtures
         run: |
           set -e
-          php examples/01-basics.php 7323            > /dev/null
-          php examples/02-avatar-fingerprint.php     > /dev/null
-          php examples/03-wire-format.php 7323       > /dev/null
-          php examples/04-laser-cutting.php 9999     > /dev/null
+          rc=0
+
+          for impl in */; do
+            impl="${impl%/}"
+            [ -f "$impl/composer.json" ] || [ -f "$impl/package.json" ] || [ -f "$impl/pyproject.toml" ] || continue
+
+            echo "── $impl"
+
+            for file in model.json fixtures/vectors.json; do
+              if [ ! -f "$impl/$file" ]; then
+                echo "   MISSING  $impl/$file"
+                rc=1
+                continue
+              fi
+
+              if diff -q "$file" "$impl/$file" > /dev/null; then
+                echo "   ok       $file"
+              else
+                echo "   DRIFTED  $impl/$file differs from the canonical $file"
+                diff -u "$file" "$impl/$file" | head -40 || true
+                rc=1
+              fi
+            done
+          done
+
+          if [ "$rc" -ne 0 ]; then
+            echo
+            echo "An implementation is carrying a stale copy of the definition."
+            echo "Copy the canonical files into it and commit, then update the"
+            echo "submodule pointer here."
+          fi
+
+          exit $rc
+
+  model:
+    name: model.json is well formed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      # Cheap structural guard on the one file every implementation loads.
+      # A malformed model breaks every language at once.
+      - name: Validate model.json
+        run: |
+          php -r '
+            $m = json_decode(file_get_contents("model.json"), true, 512, JSON_THROW_ON_ERROR);
+            foreach (["version","range","places","geometryDefaults","segments","digitMap","quadrants"] as $k) {
+              if (!isset($m[$k])) { fwrite(STDERR, "missing key: $k\n"); exit(1); }
+            }
+            if (count($m["digitMap"]) !== 10) { fwrite(STDERR, "digitMap must have 10 entries\n"); exit(1); }
+            $bits = count($m["segments"]);
+            foreach ($m["digitMap"] as $d => $mask) {
+              if ($mask < 0 || $mask >= (1 << $bits)) { fwrite(STDERR, "digit $d mask out of range\n"); exit(1); }
+            }
+            foreach ($m["places"] as $p) {
+              if (!isset($m["quadrants"][$p])) { fwrite(STDERR, "place $p has no quadrant\n"); exit(1); }
+            }
+            echo "model.json ok: ", $bits, " segments, ", count($m["places"]), " places\n";
+          '

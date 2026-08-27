@@ -17,13 +17,13 @@
             "Bash(php -l:*)",
             "Bash(php bin/demo.php:*)",
             "Bash(php bin/vectors.php:*)",
-            "Bash(php sigil-php/bin/demo.php:*)",
-            "Bash(php sigil-php/bin/vectors.php:*)",
+            "Bash(php php-sigil/bin/demo.php:*)",
+            "Bash(php php-sigil/bin/vectors.php:*)",
             "Bash(composer test:*)",
             "Bash(composer install:*)",
             "Bash(composer validate:*)",
             "Bash(vendor/bin/phpunit:*)",
-            "Bash(sigil-php/vendor/bin/phpunit:*)"
+            "Bash(php-sigil/vendor/bin/phpunit:*)"
         ],
         "deny": [
             "Bash(git push:*)",

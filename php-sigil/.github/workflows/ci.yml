@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - uses: ramsey/composer-install@v3
+
+      # Includes VectorsTest, which replays fixtures/vectors.json. That is the
+      # definition of "spec-compliant" for every Sigil implementation.
+      - name: Test
+        run: composer test
+
+  fixtures:
+    name: Fixtures match model.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      # model.json is the definition, fixtures/vectors.json its resolved
+      # output. Editing the model without regenerating breaks the contract
+      # this package shares with every other language implementation.
+      - name: fixtures/vectors.json is not stale
+        run: php bin/vectors.php --check
+
+  examples:
+    name: Examples still run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      # Documentation that no longer runs is worse than none.
+      - name: Run every example
+        run: |
+          set -e
+          php examples/01-basics.php 7323        > /dev/null
+          php examples/02-avatar-fingerprint.php > /dev/null
+          php examples/03-wire-format.php 7323   > /dev/null
+          php examples/04-laser-cutting.php 9999 > /dev/null

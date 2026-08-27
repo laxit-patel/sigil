@@ -1,6 +1,6 @@
 # Examples
 
-Runnable, each one self-contained. From `sigil-php/`:
+Runnable, each one self-contained. From `php-sigil/`:
 
 ```bash
 composer install

@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The compliance check.
  *
- * This is the only test that decides whether sigil-php is "spec-compliant":
+ * This is the only test that decides whether php-sigil is "spec-compliant":
  * it replays fixtures/vectors.json from the repo root and asserts this
  * implementation reproduces every vector exactly. Every language
  * implementation in this repo has the equivalent of this file, running
@@ -95,8 +95,23 @@ final class VectorsTest extends TestCase
      */
     private static function load(): array
     {
-        $path = getenv('SIGIL_FIXTURES')
-            ?: __DIR__ . '/../../fixtures/vectors.json';
+        $candidates = array_filter([
+            getenv('SIGIL_FIXTURES') ?: null,
+            __DIR__ . '/../fixtures/vectors.json',      // this package
+            __DIR__ . '/../../fixtures/vectors.json',   // the spec repo, when checked out around us
+        ]);
+
+        $path = null;
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                $path = $candidate;
+                break;
+            }
+        }
+
+        if ($path === null) {
+            $path = end($candidates);
+        }
 
         if (!is_file($path)) {
             self::fail(

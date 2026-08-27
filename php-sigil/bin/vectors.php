@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /**
- * Regenerates fixtures/vectors.json at the repo root -- the resolved Tier 2
- * output of model.json, and the contract every language implementation in
- * this repo is validated against.
+ * Regenerates fixtures/vectors.json -- the resolved Tier 2 output of
+ * model.json, and the contract every language implementation is validated
+ * against.
  *
  * Run this whenever model.json changes, and commit the regenerated fixtures
  * in the same change. Changing them is a breaking change for every language
@@ -38,7 +38,7 @@ $paths = array_values(array_filter($argsList, static fn (string $a): bool => !st
 
 $target = $paths[0]
     ?? getenv('SIGIL_FIXTURES')
-    ?: __DIR__ . '/../../fixtures/vectors.json';
+    ?: __DIR__ . '/../fixtures/vectors.json';
 
 $encoder = new Encoder();
 
@@ -68,7 +68,7 @@ if ($check) {
     }
 
     fwrite(STDERR, "vectors.json is STALE: {$target}\n");
-    fwrite(STDERR, "Run `php sigil-php/bin/vectors.php` and commit the regenerated file.\n");
+    fwrite(STDERR, "Run `php bin/vectors.php` and commit the regenerated file.\n");
     exit(1);
 }
 

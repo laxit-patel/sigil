@@ -20,7 +20,7 @@ declare(strict_types=1);
  *   php art/generate.php 4444 /tmp/try.svg
  */
 
-require __DIR__ . '/../sigil-php/bin/_bootstrap.php';
+require __DIR__ . '/../php-sigil/bin/_bootstrap.php';
 
 use Laxit\Sigil\Encoder;
 

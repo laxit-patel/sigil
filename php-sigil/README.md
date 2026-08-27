@@ -25,13 +25,8 @@ This is the PHP implementation, one language directory of the
 composer require laxit/sigil
 ```
 
-Packagist is fed by a read-only `git subtree split` mirror of this directory —
-develop here, never in the mirror. The release step must copy `model.json` into
-the mirror, since a split contains only its own subdirectory and the package
-would otherwise ship with no model to load. See *Publishing from one repo* in
-[`../SPEC.md`](../SPEC.md).
-
-Requires PHP 8.1+. No runtime dependencies.
+Requires PHP 8.1+. No runtime dependencies. The package ships `model.json`, the
+declarative definition it loads, so it works with nothing else installed.
 
 ## Use it
 
@@ -115,9 +110,11 @@ Renderer/*    segment list -> one specific output format
 ```
 
 None of these classes contain the digit map. They read
-[`../model.json`](../model.json), which is what keeps this package from
-drifting away from the other language implementations. `Encoder::locateModel()`
-resolves it: `SIGIL_MODEL`, then a copy beside `src/`, then the repo root.
+[`model.json`](model.json) — a vendored copy of the canonical definition in the
+[spec repo](https://github.com/laxit-patel/sigil), which diffs it against every
+implementation's copy on every build so it cannot drift.
+`Encoder::locateModel()` resolves it: `SIGIL_MODEL`, then beside the package
+root, then one level up.
 
 Renderers call `Encoder::segmentsFor()` and `Encoder::stem()` and **nothing
 else** — they never touch `SegmentModel` or `Quadrant`. That constraint is what
@@ -140,7 +137,7 @@ implementation reproduces every vector exactly. That is the whole definition
 of "spec-compliant", and every language implementation in this repo has the
 equivalent file running against the same JSON.
 
-If the fixtures live somewhere else — a split mirror, say — point at them:
+If the fixtures live somewhere else, point at them:
 
 ```bash
 SIGIL_FIXTURES=/path/to/vectors.json composer test
@@ -148,9 +145,10 @@ SIGIL_FIXTURES=/path/to/vectors.json composer test
 
 ## Changing the glyph
 
-[`../model.json`](../model.json) is the one file that defines what a glyph
-looks like — for this package and every other language implementation. If you
-change it, the fixtures must be regenerated in the same change:
+[`model.json`](model.json) is the one file that defines what a glyph looks
+like — for this package and every other language implementation. Change it in
+the [spec repo](https://github.com/laxit-patel/sigil) first, then copy it here.
+The fixtures must be regenerated in the same change:
 
 ```bash
 php bin/vectors.php            # rewrite ../fixtures/vectors.json

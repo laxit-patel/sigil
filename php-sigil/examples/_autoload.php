@@ -15,5 +15,5 @@ foreach ([__DIR__ . '/../vendor/autoload.php', __DIR__ . '/../../../autoload.php
     }
 }
 
-fwrite(STDERR, "Run `composer install` in sigil-php/ first.\n");
+fwrite(STDERR, "Run `composer install` in php-sigil/ first.\n");
 exit(1);

@@ -1,24 +1,32 @@
 # AGENTS.md
 
-The PHP implementation of Sigil. **The spec and the contract live at the repo
-root, one level up** — read `../SPEC.md` and `../AGENTS.md` before changing
-anything under `src/`.
+The PHP implementation of Sigil, published as `laxit/sigil`. This is a
+standalone repo: it installs, tests and runs with nothing else checked out.
+
+**The spec lives in a separate repo**, [laxit-patel/sigil][spec] — read its
+`SPEC.md` and `AGENTS.md` before changing anything under `src/`. When this
+repo is checked out as a submodule of it, that is `../SPEC.md`.
+
+[spec]: https://github.com/laxit-patel/sigil
 
 ## The rule that outranks everything else
 
-The digit map is **not in this package**. It lives in `../model.json`, which
-this package loads. `../fixtures/vectors.json` is the contract shared by every
-language here, and this package is correct exactly when `tests/VectorsTest.php`
-passes against it.
+`model.json` and `fixtures/vectors.json` in this repo are **vendored copies**.
+The canonical pair lives in the [spec repo][spec], whose CI diffs them against
+this repo's copies on every build — so editing them here without editing them
+there turns the build red, by design.
 
-If you change `../model.json` — segment endpoints, the digit map, the quadrant
-transforms, the default geometry — you have changed the contract for **every**
-implementation here, PHP, JS, Python, everything planned. Then:
+This package is correct exactly when `tests/VectorsTest.php` passes against
+`fixtures/vectors.json`.
 
-1. `php bin/vectors.php` — regenerate `../fixtures/vectors.json`.
-2. `composer test` — confirm the suite still passes.
-3. Commit both **in the same commit**, and say in the message that it is a
-   breaking change for the other implementations.
+To change the definition:
+
+1. Edit `model.json` in the [spec repo][spec] first. That is a breaking change
+   for **every** implementation — PHP, JS, Python, everything planned.
+2. Copy it here, run `php bin/vectors.php` to regenerate `fixtures/vectors.json`.
+3. `composer test`.
+4. Commit both files together, push, and update the submodule pointer in the
+   spec repo.
 
 Never reorder `model.json`'s `segments` array: that order is both the bit
 position of each segment in `digitMap` and the emit order. Append only.
@@ -55,11 +63,10 @@ is the contract. Add a row to the renderer table in `README.md`.
 ## Commands
 
 ```bash
-cd sigil-php                   # every command below runs from this directory
 composer install
 composer test                  # phpunit, including the fixture compliance suite
 php bin/demo.php 7323 all      # render one glyph in every format
-php bin/vectors.php            # regenerate ../fixtures/vectors.json from ../model.json
+php bin/vectors.php            # regenerate fixtures/vectors.json from model.json
 php bin/vectors.php --check    # CI: fail if the committed fixtures are stale
 ```
 

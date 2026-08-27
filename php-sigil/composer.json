@@ -12,15 +12,15 @@
     ],
     "type": "library",
     "license": "MIT",
-    "homepage": "https://github.com/laxit-patel/sigil",
+    "homepage": "https://github.com/laxit-patel/php-sigil",
     "support": {
-        "issues": "https://github.com/laxit-patel/sigil/issues",
-        "source": "https://github.com/laxit-patel/sigil/tree/main/sigil-php"
+        "issues": "https://github.com/laxit-patel/php-sigil/issues",
+        "source": "https://github.com/laxit-patel/php-sigil"
     },
     "authors": [
         {
             "name": "laxit-patel",
-            "email": "lankit@topsinfosolutions.com"
+            "email": "laxxitpatel@gmail.com"
         }
     ],
     "require": {
