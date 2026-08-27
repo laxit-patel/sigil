@@ -35,7 +35,7 @@ sigil/                    <- this repo: the definition, and nothing else
   LICENSE                 # MIT
 
   php-sigil/   -> github.com/laxit-patel/php-sigil   (submodule)
-  js-sigil/    -> future                             (submodule)
+  js-sigil/    -> github.com/laxit-patel/js-sigil    (submodule)
   py-sigil/    -> future                             (submodule)
   cli-sigil/   -> future                             (submodule)
 ```
@@ -43,9 +43,9 @@ sigil/                    <- this repo: the definition, and nothing else
 - **`php-sigil`** — PHP, published as `laxit/sigil` on Packagist. First
   delivery target; the spec below is written PHP-first but every construct
   maps directly onto any language.
-- **`js-sigil`** *(future)* — JS/TS; npm package. Natural home for the
-  Canvas renderer and a `<sigil-glyph value="1234">` web component, since
-  those only make sense in a browser.
+- **`js-sigil`** — JS/TS, published as `@laxit/sigil` on npm. Home of the
+  Canvas renderer and the `<sigil-glyph value="1234">` web component, since
+  those only make sense in a browser. Zero dependencies.
 - **`py-sigil`** *(future)* — Python. Useful anywhere the glyph needs to
   be generated server-side (e.g. alongside a hashed user ID) rather than
   client-side.
@@ -83,8 +83,8 @@ because this is where the definition lives:
 Each implementation publishes **directly from its own repo** — a manifest at
 its repository root is what registries expect, so there is nothing to
 generate, mirror or split. `php-sigil` has `composer.json` at its root and is
-submitted to Packagist as `laxit/sigil`; a future `js-sigil` publishes to npm
-the same way.
+submitted to Packagist as `laxit/sigil`; `js-sigil` publishes to npm as
+`@laxit/sigil` the same way.
 
 Versions are per implementation. `php-sigil` tags `v1.2.0` in its own repo
 without JS or Python having any opinion about it, and this repo's submodule
@@ -224,6 +224,15 @@ The ceiling is **18 places**. Beyond that `10^n - 1` exceeds the exact range of
 a 64-bit integer and silently degrades to a float, losing the precision this
 whole document exists to protect. An implementation must refuse rather than
 round, and must never quietly hand back fewer places than were asked for.
+
+**A language may have a lower ceiling than the spec, and must say so rather
+than paper over it.** JavaScript is the first case: a `Number` is exact only to
+2^53−1, which runs out at *15* places, not 18. `js-sigil` therefore accepts
+`number | bigint | string` and refuses an inexact `Number` outright, rather
+than encoding a different value than the caller passed. The rule generalises:
+where the host language cannot hold a value exactly, refuse the input — never
+accept it approximately. Silent approximation is the same defect as a declared
+range that disagrees with its places, arriving by a different route.
 
 ## Intermediate representation
 
@@ -403,8 +412,8 @@ what is actually ported is arithmetic, not tables. Renderers are still
 rewritten idiomatically per implementation, not translated line-by-line, since
 e.g. Canvas only makes sense in `js-sigil`.
 
-1. **`php-sigil`** first — typed properties/readonly classes, `match`, `laxit/sigil` on Packagist.
-2. **`js-sigil`** next — this is where Canvas and the web component actually belong.
+1. **`php-sigil`** — typed properties/readonly classes, `match`, `laxit/sigil` on Packagist. Done.
+2. **`js-sigil`** — Canvas and the web component. Done.
 3. **`py-sigil`** — wherever server-side generation is needed.
 4. **`cli-sigil`** — once at least one language implementation is stable enough to wrap, or built standalone in Go/Rust if a zero-dependency binary matters more than reusing existing code.
 

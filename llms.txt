@@ -41,6 +41,9 @@ AGENTS.md. Nothing is shared between them except fixtures/vectors.json.
 - Default range is 0-9999 (2 rows, 4 places) -- the historical system. Not a
   geometric limit: rows are configurable, up to 18 places, and more rows make
   one taller mark rather than several glyphs.
+- A language with a lower exact-integer ceiling than the spec's 18 places must
+  refuse inexact input rather than approximate it: JS Numbers run out at 15
+  places, so js-sigil takes number | bigint | string.
 - The range is DERIVED as 10^count(places)-1, never declared. A declared range
   could contradict the places, and then 12345 would silently render as 2345.
 - `0` is valid and renders as the bare stem.

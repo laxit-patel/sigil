@@ -64,7 +64,7 @@ checked out here so the whole project reads as one thing.
 | Repo | Package | Status | Renderers |
 |---|---|---|---|
 | [`php-sigil`](https://github.com/laxit-patel/php-sigil) | `laxit/sigil` | working | SVG, ASCII, DXF |
-| `js-sigil` | npm | planned | Canvas, SVG, `<sigil-glyph>` web component, font |
+| [`js-sigil`](https://github.com/laxit-patel/js-sigil) | `@laxit/sigil` | working | SVG, Canvas, ASCII, `<sigil-glyph>` |
 | `py-sigil` | PyPI | planned | server-side generation |
 | `cli-sigil` | binary | planned | single dependency-free binary (Go/Rust) |
 
@@ -76,8 +76,13 @@ quietly drift.
 
 ```bash
 git clone --recurse-submodules https://github.com/laxit-patel/sigil
+
 cd sigil/php-sigil && composer install && composer test
+cd ../js-sigil    && npm test          # no install step; zero dependencies
 ```
+
+The two implementations agree byte-for-byte on ASCII and SVG output, though
+only the segment list is contractual.
 
 **See it in use:** [`php-sigil/examples/`](php-sigil/examples) — the whole API
 in one file, identicon-style avatars, resolve-on-server/draw-in-browser, and
