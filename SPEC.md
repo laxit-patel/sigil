@@ -69,7 +69,7 @@ subdirectory rather than maintained by hand:
 
 ```bash
 git subtree split --prefix=sigil-php -b php-release
-git push git@github.com:laxit/sigil-php.git php-release:main
+git push git@github.com:laxit-patel/sigil-php.git php-release:main
 ```
 
 The mirror is an artifact. Nobody develops in it, and it never diverges,

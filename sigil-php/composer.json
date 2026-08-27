@@ -1,9 +1,22 @@
 {
     "name": "laxit/sigil",
     "description": "Turn an integer 0-9999 into one recognizable Cistercian-style glyph: SVG, ASCII or DXF.",
-    "keywords": ["cistercian", "glyph", "sigil", "svg", "dxf", "ascii", "identicon"],
+    "keywords": [
+        "cistercian",
+        "glyph",
+        "sigil",
+        "svg",
+        "dxf",
+        "ascii",
+        "identicon"
+    ],
     "type": "library",
     "license": "MIT",
+    "homepage": "https://github.com/laxit-patel/sigil",
+    "support": {
+        "issues": "https://github.com/laxit-patel/sigil/issues",
+        "source": "https://github.com/laxit-patel/sigil/tree/main/sigil-php"
+    },
     "authors": [
         {
             "name": "laxit-patel",

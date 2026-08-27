@@ -1,8 +1,22 @@
-# Sigil
+<p align="center">
+  <img src="art/umbral_sigilstone.png" alt="Umbral Sigilstone" width="400">
+</p>
 
-[![CI](https://github.com/laxit/sigil/actions/workflows/ci.yml/badge.svg)](https://github.com/laxit/sigil/actions/workflows/ci.yml)
+# 💜 Umbral Sigilstone
 
-A number turned into one recognizable mark.
+**Sigil** — turns any integer `0-9999` into one recognizable Cistercian-style glyph.
+
+> *The Umbral Sigilstone presses a number into a single struck mark: one stem
+> and a handful of strokes, identical everywhere it is struck — in pixels, in
+> ink, or in cut metal.*
+
+[![CI](https://github.com/laxit-patel/sigil/actions/workflows/ci.yml/badge.svg)](https://github.com/laxit-patel/sigil/actions/workflows/ci.yml)
+
+---
+
+```
+7323  →  💜  →  svg · ascii · dxf
+```
 
 Sigil takes an integer `0-9999` and produces a Cistercian-style glyph — one
 vertical stem plus a small set of toggled line segments, one quadrant per digit

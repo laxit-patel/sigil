@@ -1,10 +1,25 @@
-# laxit/sigil
+<p align="center">
+  <img src="https://raw.githubusercontent.com/laxit-patel/sigil/main/art/umbral_sigilstone.png" alt="Umbral Sigilstone" width="400">
+</p>
 
-PHP implementation of [Sigil](..) — turn an integer `0-9999` into one
-recognizable Cistercian-style glyph, rendered as SVG, ASCII or DXF.
+# 💜 Umbral Sigilstone — PHP
 
-This is one language directory of the Sigil repo; the spec it implements is
-[`../SPEC.md`](../SPEC.md).
+**laxit/sigil** — turns any integer `0-9999` into one recognizable
+Cistercian-style glyph, rendered as SVG, ASCII or DXF.
+
+> *The Umbral Sigilstone presses a number into a single struck mark: one stem
+> and a handful of strokes, identical everywhere it is struck — in pixels, in
+> ink, or in cut metal.*
+
+---
+
+```
+7323  →  💜  →  svg · ascii · dxf
+```
+
+This is the PHP implementation, one language directory of the
+[Sigil](https://github.com/laxit-patel/sigil) repo; the spec it implements is
+[`SPEC.md`](https://github.com/laxit-patel/sigil/blob/main/SPEC.md).
 
 ```bash
 composer require laxit/sigil
