@@ -14,10 +14,20 @@
             "Bash(grep:*)",
             "Bash(rg:*)",
             "Bash(jq:*)",
-            "Bash(php ../sigil-php/bin/vectors.php:*)"
+            "Bash(php -l:*)",
+            "Bash(php bin/demo.php:*)",
+            "Bash(php bin/vectors.php:*)",
+            "Bash(php sigil-php/bin/demo.php:*)",
+            "Bash(php sigil-php/bin/vectors.php:*)",
+            "Bash(composer test:*)",
+            "Bash(composer install:*)",
+            "Bash(composer validate:*)",
+            "Bash(vendor/bin/phpunit:*)",
+            "Bash(sigil-php/vendor/bin/phpunit:*)"
         ],
         "deny": [
-            "Bash(git push:*)"
+            "Bash(git push:*)",
+            "Bash(composer publish:*)"
         ]
     }
 }

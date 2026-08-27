@@ -6,29 +6,42 @@ set of toggled line segments per digit place — through whatever output
 format a given delivery needs: SVG, ASCII, DXF, Canvas, a font, audio,
 STL, and so on.
 
-This document is the shared source of truth. Every implementation repo
-(PHP first, others later) builds against it and is validated against the
-same fixture file, so no implementation can silently drift from another.
+This document is the shared source of truth. Every implementation in this
+repo (PHP first, others later) builds against it and is validated against
+the same fixture file, so no implementation can silently drift from
+another.
 
 ## Repository structure
 
-Sigil is one idea spread across multiple repos, not one monorepo, so each
-language implementation can be independently versioned and released.
+Sigil is **one repository**. The spec and the golden fixtures live at the
+root; each language implementation is a subdirectory beside them. The point
+is that the problem — what a glyph *is* — has one home, and every language
+sits next to that definition rather than a copy of it.
 
-- **`sigil`** *(this repo — root, spec only, no implementation code)*
-  ```
-  SPEC.md               # this document
-  fixtures/
-    vectors.json        # golden test vectors every implementation must match exactly
-  AGENTS.md             # pointer for AI coding agents cloning any sigil-* repo
-  CLAUDE.md             # -> AGENTS.md
-  llms.txt              # short machine-readable project summary
-  README.md
-  LICENSE               # MIT
-  ```
-- **`sigil-php`** — PHP implementation, published as `laxit/sigil` on
-  Packagist. First delivery target; the spec below is written PHP-first
-  but every construct maps directly onto any language.
+```
+SPEC.md                 # this document
+fixtures/
+  vectors.json          # golden test vectors every implementation must match exactly
+AGENTS.md               # read-this-first for anyone writing an implementation
+CLAUDE.md               # -> AGENTS.md
+llms.txt                # short machine-readable project summary
+README.md
+LICENSE                 # MIT
+
+sigil-php/              # PHP implementation  (laxit/sigil on Packagist)
+sigil-js/    (future)   # JS/TS
+sigil-py/    (future)   # Python
+sigil-cli/   (future)   # standalone binary
+```
+
+Each implementation directory is self-contained — its own manifest, its own
+dependencies, its own test suite — and carries an `AGENTS.md` covering what
+is specific to that language. Nothing is shared between them except
+`fixtures/vectors.json`, which every one of them reads.
+
+- **`sigil-php`** — PHP, published as `laxit/sigil` on Packagist. First
+  delivery target; the spec below is written PHP-first but every construct
+  maps directly onto any language.
 - **`sigil-js`** *(future)* — JS/TS; npm package. Natural home for the
   Canvas renderer and a `<sigil-glyph value="1234">` web component, since
   those only make sense in a browser.
@@ -39,28 +52,27 @@ language implementation can be independently versioned and released.
   rather than tied to one of the ecosystems above, so it ships as a
   single dependency-free binary usable outside any package manager.
 
-**The contract between repos is `sigil/fixtures/vectors.json`, not this
-prose.** Any implementation — PHP, JS, Python, Go, whatever comes next —
-is "spec-compliant" exactly when it reproduces every vector in that file
-byte-for-byte. This document explains *why* the fixtures say what they
-say; the fixtures are what CI actually checks.
+**The contract between implementations is `fixtures/vectors.json`, not this
+prose.** Any implementation — PHP, JS, Python, Go, whatever comes next — is
+"spec-compliant" exactly when it reproduces every vector in that file
+byte-for-byte. This document explains *why* the fixtures say what they say;
+the fixtures are what CI actually checks.
 
-### `AGENTS.md` (root repo) — suggested contents
+### Publishing from one repo
 
-A short file, not a rewrite of this spec — its only job is redirecting an
-agent to the real source of truth before it starts writing code in any
-`sigil-*` repo:
+A single repo does not mean a single release. Each implementation is
+versioned and tagged on its own (`php-v1.2.0`, `js-v0.3.1`), and package
+registries that insist on a manifest at the repository root — Packagist
+does — are fed by a **read-only split mirror**, generated from the
+subdirectory rather than maintained by hand:
 
+```bash
+git subtree split --prefix=sigil-php -b php-release
+git push git@github.com:laxit/sigil-php.git php-release:main
 ```
-This repo is the spec-only root of the Sigil project. Before implementing
-anything in a sigil-* repo:
-1. Read SPEC.md in full.
-2. Your implementation must reproduce every vector in fixtures/vectors.json
-   exactly (same segments, same coordinates, same digit→segment mapping).
-3. Do not modify SegmentModel/DIGIT_MAP-equivalent logic without updating
-   fixtures/vectors.json here first — it is the cross-repo contract, and
-   changing it is a breaking change for every language implementation.
-```
+
+The mirror is an artifact. Nobody develops in it, and it never diverges,
+because it is regenerated from this repo on every release.
 
 ## Core principle: model/renderer separation
 
@@ -191,7 +203,7 @@ rather than reusing the continuous SVG-scale coordinates).
 - **ASCII** — independent integer grid (suggested `4` chars per quadrant width/height), same digit/quadrant tables, `-`/`|`/`\`/`/` characters, Bresenham-style stepping for diagonals.
 - **DXF (R12, LINE entities)** — same segment list, **Y sign flipped** (DXF/CAD Y grows upward, SVG-style Y here grows downward) so laser/CNC output isn't upside down.
 
-### Later repos / renderers (same pattern each time)
+### Later implementations / renderers (same pattern each time)
 - **Canvas** *(sigil-js)* — same segment list, `ctx.moveTo/lineTo` instead of `<line>` tags; worth it once rendering hundreds of glyphs at once (e.g. an avatar list) where per-element SVG DOM nodes get expensive.
 - **Font** *(sigil-js or a dedicated tool)* — bake each digit-per-quadrant combination into a custom TTF/WOFF using the Cistercian ConScript private-use-area code points (`U+EBA0`–`U+EBDF`), making the glyph copy-pasteable text for anyone with the font loaded.
 - **Audio** — map active segments to notes in a short chord, play as a ~1s chime; same fingerprint concept as an SVG identicon, different sense.
@@ -212,19 +224,19 @@ src/
     DxfRenderer.php
 bin/
   demo.php
-  vectors.php        # regenerates fixtures/vectors.json in the root repo when SegmentModel changes
+  vectors.php        # regenerates ../fixtures/vectors.json when SegmentModel changes
 composer.json        # package name: laxit/sigil
 ```
 
-`bin/vectors.php` in `sigil-php` should be the tool that *generates*
-`sigil/fixtures/vectors.json` in the root repo whenever the digit map or
-default geometry changes — the root repo doesn't compute the fixtures
-itself, it just stores the output and every implementation is checked
-against it.
+`sigil-php/bin/vectors.php` is the tool that *generates*
+`fixtures/vectors.json` whenever the digit map or default geometry changes.
+The root doesn't compute the fixtures itself — it stores the output, and
+every implementation is checked against it. Whichever implementation is
+furthest along owns the generator; today that is PHP.
 
 ## Golden test vectors
 
-`sigil/fixtures/vectors.json` holds real, verified `{number, digits, stem,
+`fixtures/vectors.json` holds real, verified `{number, digits, stem,
 segments}` entries — not illustrative examples, actual encoder output —
 for a set chosen to exercise every segment shape at least once (`1`, `6`,
 `9` in the ones place covers `top`, `outer`, and the closed `9` box) and
@@ -233,19 +245,20 @@ composite numbers (`7323`, `9999`) as end-to-end checks. `0` confirms the
 empty case (stem only, zero segments).
 
 It is generated, never hand-edited: `sigil-php/bin/vectors.php` writes it,
-and `php bin/vectors.php --check` exits non-zero when the committed file has
-drifted from the digit map — run that in CI on both repos.
+and `php sigil-php/bin/vectors.php --check` exits non-zero when the committed
+file has drifted from the digit map — run that in CI, alongside each
+implementation's own suite.
 
 Each implementation's test suite loads this file and asserts its own
 `segmentsFor(number)` output matches the `segments` array exactly for
-every vector — this is the actual cross-repo compliance check, replacing
-any hand-written per-language test data.
+every vector — this is the actual compliance check, replacing any
+hand-written per-language test data.
 
 ## Language ports
 
 Only `SegmentModel`, `Quadrant`, and `Encoder` (or each language's
 equivalent) need porting — under ~150 lines total, zero dependencies.
-Renderers are rewritten idiomatically per repo, not translated
+Renderers are rewritten idiomatically per implementation, not translated
 line-by-line, since e.g. Canvas only makes sense in `sigil-js`.
 
 1. **`sigil-php`** first — typed properties/readonly classes, `match`, `laxit/sigil` on Packagist.
@@ -253,7 +266,7 @@ line-by-line, since e.g. Canvas only makes sense in `sigil-js`.
 3. **`sigil-py`** — wherever server-side generation is needed.
 4. **`sigil-cli`** — once at least one language implementation is stable enough to wrap, or built standalone in Go/Rust if a zero-dependency binary matters more than reusing existing code.
 
-Every port's test suite must pass `sigil/fixtures/vectors.json` before it
+Every port's test suite must pass `fixtures/vectors.json` before it
 counts as "done" — that's the only cross-language acceptance criterion
 that matters; everything else in this document is explanation for *why*
 the fixtures are shaped the way they are.

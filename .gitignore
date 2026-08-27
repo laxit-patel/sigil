@@ -1,4 +1,4 @@
-# Root repo is spec + fixtures only. Nothing is built here.
+# Editors / OS
 .DS_Store
 *.swp
 .idea/
@@ -6,3 +6,6 @@
 
 # Personal Claude Code overrides
 .claude/settings.local.json
+
+# Language directories carry their own .gitignore for build output
+# (sigil-php/vendor, etc.) so each stays self-contained.
