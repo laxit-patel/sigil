@@ -1,5 +1,7 @@
 # Sigil
 
+[![CI](https://github.com/laxit/sigil/actions/workflows/ci.yml/badge.svg)](https://github.com/laxit/sigil/actions/workflows/ci.yml)
+
 A number turned into one recognizable mark.
 
 Sigil takes an integer `0-9999` and produces a Cistercian-style glyph — one
@@ -52,6 +54,10 @@ cd sigil-php && composer install && composer test
 php bin/demo.php 7323 all
 ```
 
+**See it in use:** [`sigil-php/examples/`](sigil-php/examples) — the whole API
+in one file, identicon-style avatars, resolve-on-server/draw-in-browser, and
+DXF for a laser cutter. Each is runnable, and CI runs them so they cannot rot.
+
 A single repo does not mean a single release: implementations are tagged
 independently (`php-v1.2.0`, `js-v0.3.1`), and registries that need a
 manifest at the repository root are fed by a read-only `git subtree split`
@@ -73,8 +79,12 @@ in one file — not the same fix applied four times.
 
 ```bash
 php sigil-php/bin/vectors.php            # regenerate the fixtures from model.json
-php sigil-php/bin/vectors.php --check    # CI: fail if the committed fixtures are stale
+php sigil-php/bin/vectors.php --check    # fail if the committed fixtures are stale
 ```
+
+CI runs that check on every push, so an edit to `model.json` without a
+regenerated `fixtures/vectors.json` fails the build rather than waiting for a
+second language to disagree.
 
 Editing `model.json` is a breaking change for every language here at once —
 regenerate the fixtures in the same commit, or the implementations drift apart

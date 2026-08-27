@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: Fixtures match model.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      # The contract check. model.json is the definition; fixtures/vectors.json
+      # is the resolved output. If someone edits the model and forgets to
+      # regenerate, every language implementation drifts at once -- so this
+      # fails the build rather than waiting for a port to disagree.
+      - name: fixtures/vectors.json is not stale
+        run: php sigil-php/bin/vectors.php --check
+
+  php:
+    name: sigil-php (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4']
+    defaults:
+      run:
+        working-directory: sigil-php
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict --no-check-publish
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          working-directory: sigil-php
+
+      # Includes VectorsTest, which replays ../fixtures/vectors.json. That is
+      # the definition of "spec-compliant" for every language here.
+      - name: Test
+        run: composer test
+
+  examples:
+    name: Examples still run
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sigil-php
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          working-directory: sigil-php
+
+      # Examples are documentation, and documentation that no longer runs is
+      # worse than none. They are cheap to execute, so they are checked.
+      - name: Run every example
+        run: |
+          set -e
+          php examples/01-basics.php 7323            > /dev/null
+          php examples/02-avatar-fingerprint.php     > /dev/null
+          php examples/03-wire-format.php 7323       > /dev/null
+          php examples/04-laser-cutting.php 9999     > /dev/null

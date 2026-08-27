@@ -48,6 +48,26 @@ $ php bin/demo.php 7323 ascii
 
 `bin/demo.php <number> [ascii|svg|dxf|all]` renders one glyph to stdout.
 
+## Examples
+
+[`examples/`](examples) has four runnable, self-contained programs — input,
+output and implementation for each:
+
+| | |
+|---|---|
+| [`01-basics.php`](examples/01-basics.php) | The whole API — number in, segment list out, three renderers over the same list |
+| [`02-avatar-fingerprint.php`](examples/02-avatar-fingerprint.php) | Identicon-style avatars: a stable mark per user, no image files, no uploads |
+| [`03-wire-format.php`](examples/03-wire-format.php) | Resolve on the server, draw in the browser with no Cistercian logic client-side |
+| [`04-laser-cutting.php`](examples/04-laser-cutting.php) | DXF for a laser/CNC, and the doubled-cut gotcha you must handle |
+
+```bash
+composer install
+php examples/01-basics.php 7323
+```
+
+Start with [`examples/README.md`](examples/README.md), which shows each one's
+output inline.
+
 ### Renderers
 
 | Renderer | Output |
@@ -95,6 +115,9 @@ test (`RendererTest::testRenderersDoNotReachIntoTheNumberLogic`), not by review.
 composer install
 composer test
 ```
+
+CI runs the suite on PHP 8.1 through 8.4, checks the fixtures are not stale,
+and executes every example.
 
 The suite that matters is `tests/VectorsTest.php`: it replays
 [`../fixtures/vectors.json`](../fixtures/vectors.json) and asserts this
