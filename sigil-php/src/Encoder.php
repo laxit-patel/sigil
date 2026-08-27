@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Cistercian;
+namespace Laxit\Sigil;
 
 use InvalidArgumentException;
 use JsonException;

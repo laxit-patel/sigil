@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Cistercian\Tests;
+namespace Laxit\Sigil\Tests;
 
-use Cistercian\Encoder;
-use Cistercian\Renderer\AsciiRenderer;
-use Cistercian\Renderer\DxfRenderer;
-use Cistercian\Renderer\SvgRenderer;
+use Laxit\Sigil\Encoder;
+use Laxit\Sigil\Renderer\AsciiRenderer;
+use Laxit\Sigil\Renderer\DxfRenderer;
+use Laxit\Sigil\Renderer\SvgRenderer;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -88,7 +88,7 @@ final class RendererTest extends TestCase
             $code = (string) file_get_contents($file);
 
             self::assertDoesNotMatchRegularExpression(
-                '/\b(SegmentModel|Quadrant)\b\s*(::|\$)|use\s+Cistercian\\\\(SegmentModel|Quadrant)\s*;/',
+                '/\b(SegmentModel|Quadrant)\b\s*(::|\$)|use\s+Laxit\\\\Sigil\\\\(SegmentModel|Quadrant)\s*;/',
                 $code,
                 basename($file) . ' must not use SegmentModel or Quadrant directly.',
             );

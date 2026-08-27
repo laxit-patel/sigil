@@ -65,6 +65,9 @@ php bin/vectors.php --check    # CI: fail if the committed fixtures are stale
 
 ## Conventions
 
+- PSR-4 root namespace is `Laxit\Sigil\` (`Laxit\Sigil\Renderer\` for
+  renderers), published as `laxit/sigil`. Renaming it after publication is a
+  breaking change for every consumer, so it is not a casual edit.
 - `declare(strict_types=1)` in every file.
 - Typed properties, readonly promoted constructor params, `final` classes.
 - Comments explain *why*, not what. The digit table and the ordering rules

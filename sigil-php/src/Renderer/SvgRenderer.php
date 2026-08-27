@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Cistercian\Renderer;
+namespace Laxit\Sigil\Renderer;
 
-use Cistercian\Encoder;
+use Laxit\Sigil\Encoder;
 
 /**
  * Segment list -> SVG document.

@@ -21,10 +21,10 @@ Requires PHP 8.1+. No runtime dependencies.
 ## Use it
 
 ```php
-use Cistercian\Encoder;
-use Cistercian\Renderer\SvgRenderer;
-use Cistercian\Renderer\AsciiRenderer;
-use Cistercian\Renderer\DxfRenderer;
+use Laxit\Sigil\Encoder;
+use Laxit\Sigil\Renderer\SvgRenderer;
+use Laxit\Sigil\Renderer\AsciiRenderer;
+use Laxit\Sigil\Renderer\DxfRenderer;
 
 $encoder = new Encoder();
 

@@ -18,12 +18,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Cistercian\\": "src/"
+            "Laxit\\Sigil\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Cistercian\\Tests\\": "tests/"
+            "Laxit\\Sigil\\Tests\\": "tests/"
         }
     },
     "scripts": {

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Cistercian\Tests;
+namespace Laxit\Sigil\Tests;
 
-use Cistercian\Encoder;
+use Laxit\Sigil\Encoder;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

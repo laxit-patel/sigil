@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/_autoload.php';
 
-use Cistercian\Encoder;
+use Laxit\Sigil\Encoder;
 
 $number = isset($argv[1]) ? (int) $argv[1] : 7323;
 

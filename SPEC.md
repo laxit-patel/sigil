@@ -297,8 +297,8 @@ src/
     DxfRenderer.php
 bin/
   demo.php
-  vectors.php        # regenerates ../fixtures/vectors.json when SegmentModel changes
-composer.json        # package name: laxit/sigil
+  vectors.php        # regenerates ../fixtures/vectors.json when model.json changes
+composer.json        # package laxit/sigil, PSR-4 root namespace Laxit\Sigil\
 ```
 
 `sigil-php/bin/vectors.php` is the tool that *generates*

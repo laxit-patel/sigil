@@ -15,8 +15,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/_autoload.php';
 
-use Cistercian\Encoder;
-use Cistercian\Renderer\SvgRenderer;
+use Laxit\Sigil\Encoder;
+use Laxit\Sigil\Renderer\SvgRenderer;
 
 $users = [
     'ada@example.com',

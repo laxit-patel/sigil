@@ -17,7 +17,7 @@ if (is_file($composer)) {
 }
 
 spl_autoload_register(static function (string $class): void {
-    $prefix = 'Cistercian\\';
+    $prefix = 'Laxit\\Sigil\\';
 
     if (!str_starts_with($class, $prefix)) {
         return;

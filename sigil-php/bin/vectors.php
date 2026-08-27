@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/_bootstrap.php';
 
-use Cistercian\Encoder;
+use Laxit\Sigil\Encoder;
 
 /**
  * 0-9 as bare ones-place vectors, so every digit's exact segment combination
