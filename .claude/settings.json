@@ -1,0 +1,23 @@
+{
+    "permissions": {
+        "allow": [
+            "Read",
+            "Bash(git status:*)",
+            "Bash(git diff:*)",
+            "Bash(git log:*)",
+            "Bash(git show:*)",
+            "Bash(git add:*)",
+            "Bash(git branch:*)",
+            "Bash(cat:*)",
+            "Bash(ls:*)",
+            "Bash(find:*)",
+            "Bash(grep:*)",
+            "Bash(rg:*)",
+            "Bash(jq:*)",
+            "Bash(php ../sigil-php/bin/vectors.php:*)"
+        ],
+        "deny": [
+            "Bash(git push:*)"
+        ]
+    }
+}

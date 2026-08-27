@@ -1,0 +1,8 @@
+# Root repo is spec + fixtures only. Nothing is built here.
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Personal Claude Code overrides
+.claude/settings.local.json
