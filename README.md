@@ -14,7 +14,7 @@
 
 ---
 
-```
+```text
 7323  →  💜  →  svg · ascii · dxf
 ```
 
@@ -23,7 +23,7 @@ vertical stem plus a small set of toggled line segments, one quadrant per digit
 place — in whatever output format a given delivery needs: SVG, ASCII, DXF,
 Canvas, a font, audio, STL.
 
-```
+```text
   7323          9999            0
     |         |---|---|         |
     |\        |   |   |         |
@@ -83,7 +83,7 @@ commit of each implementation the project was last verified against.
 
 One file defines the glyph. Every language reads it.
 
-```
+```text
 model.json  ──loaded by──>  each implementation's resolver  ──produces──>  glyph objects
      │                                                                          │
      └────────── regenerates ──────────> fixtures/vectors.json <── must match ───┘
@@ -112,7 +112,7 @@ silently changes what every digit means.
 
 Each quadrant around the stem carries one digit place:
 
-```
+```text
  tens | ones          top-right = ones, top-left = tens,
 ------|------         bottom-right = hundreds, bottom-left = thousands
 thou. | hund.
