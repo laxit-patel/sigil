@@ -18,10 +18,16 @@
 7323  →  💜  →  svg · ascii · dxf
 ```
 
-Sigil takes an integer `0-9999` and produces a Cistercian-style glyph — one
-vertical stem plus a small set of toggled line segments, one quadrant per digit
-place — in whatever output format a given delivery needs: SVG, ASCII, DXF,
-Canvas, a font, audio, STL.
+Sigil takes an integer and produces a Cistercian-style glyph — one vertical
+stem plus a small set of toggled line segments, one quadrant per digit place —
+in whatever output format a given delivery needs: SVG, ASCII, DXF, Canvas, a
+font, audio, STL.
+
+Four digits (`0-9999`) is the historical system and the default. It is not a
+limit of the geometry: a place is a *side* of the stem and a *row* down it, so
+a taller stem carries more digits and stays **one mark**. The range is derived
+from how many places the model declares — up to 18, where exact integers run
+out — so it can never disagree with them.
 
 ```text
   7323          9999            0
@@ -46,6 +52,7 @@ checked out here so the whole project reads as one thing.
 | [`SPEC.md`](SPEC.md) | The specification. Data model, digit→segment table, quadrant transforms, encoder algorithm, renderer contract. |
 | [`model.json`](model.json) | **Tier 1 — the definition.** Segment shapes, digit map, quadrant transforms, default geometry. Every implementation *loads* this; none retype it. |
 | [`fixtures/vectors.json`](fixtures/vectors.json) | **Tier 2 — the contract.** Resolved output for 15 numbers. An implementation is spec-compliant exactly when it reproduces these. |
+| [`fixtures/vectors-wide.json`](fixtures/vectors-wide.json) | The same model at 1, 3 and 4 rows — what stops a port hardcoding four places. |
 | [`AGENTS.md`](AGENTS.md) | Read-this-first for anyone (or anything) about to write an implementation. |
 | [`llms.txt`](llms.txt) | Machine-readable project summary. |
 | [`php-sigil/`](php-sigil) | PHP implementation — `laxit/sigil` on Packagist. |

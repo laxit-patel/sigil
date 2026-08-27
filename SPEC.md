@@ -158,10 +158,11 @@ repo keeps working unchanged — none of them read the table directly.
 
 Two consequences fall out of the geometry and are intentional, not bugs:
 
-- **Coincident lines at the midpoint.** A `tens` quadrant's `bottom` row and a
-  `thousands` quadrant's `top` row are the same line (both at `midY`), as are
-  `ones.bottom` and `hundreds.top`. A number like `7323` therefore emits two
-  identical coordinate pairs. Visually this is invisible; for **laser/CNC
+- **Coincident lines at every row boundary.** Places in adjacent rows on the
+  same side share an edge: `tens.bottom` and `thousands.top` are the same line,
+  as are `ones.bottom` and `hundreds.top`. A number like `7323` therefore emits
+  two identical coordinate pairs, and taller glyphs emit more — one possible
+  pair per interior row boundary per side. Visually this is invisible; for **laser/CNC
   output it means a doubled cut**, so a DXF consumer that cares should dedupe
   at its own layer. The encoder does not dedupe — the segment list is a
   faithful record of which digit turned which segment on, and collapsing it
@@ -169,14 +170,58 @@ Two consequences fall out of the geometry and are intentional, not bugs:
 - **The stem is always drawn**, including for `0`, which has zero segments.
   The stem is what makes an empty glyph readable as "zero" rather than blank.
 
-### Quadrants
+### Places
 
-| name | place value | flipX (left of stem?) | flipY (below midpoint?) |
+A place is a position around the stem: which **side** of it, and which **row**
+down. Row 0 is the top row. List order is the place value — index 0 is ones,
+index 1 tens, and so on — so nothing declares `10^n` separately and nothing
+can contradict it.
+
+| index | name | side | row |
 |---|---|---|---|
-| `ones` | 1 | no | no |
-| `tens` | 10 | yes | no |
-| `hundreds` | 100 | no | yes |
-| `thousands` | 1000 | yes | yes |
+| 0 | `ones` | right | 0 |
+| 1 | `tens` | left | 0 |
+| 2 | `hundreds` | right | 1 |
+| 3 | `thousands` | left | 1 |
+
+Two rows of two sides is the historical Cistercian system, and it is the
+default. **It is not a limit of the geometry.** `flipY` in earlier drafts was
+a boolean pretending to be a row index; once it is an actual index, the same
+model describes a stem of any height:
+
+| rows | places | range | shape |
+|---|---|---|---|
+| 1 | 2 | 0–99 | degenerate, one row |
+| **2** | **4** | **0–9999** | **the historical system, the default** |
+| 3 | 6 | 0–999999 | |
+| 4 | 8 | 0–99999999 | |
+| 9 | 18 | 0–10^18−1 | the widest an exact integer allows |
+
+Row `r`, side `s` maps to place `2r + s`, so the ordering above generalises
+untouched, and a 2-row model reproduces every historical vector byte for byte.
+
+More rows produce **one taller mark**, not several glyphs side by side — which
+matters, because "a number turned into one recognizable mark" is the point of
+the project. Juxtaposing glyphs (`1234 | 5678`) is the historical approach and
+remains available to any renderer, but it is no longer the only way past four
+digits.
+
+### The range is derived, never declared
+
+`max = 10^count(places) - 1`. This is not a convenience; it removes a class of
+silent corruption.
+
+An earlier model declared `range` alongside `places`, and the two could
+disagree. Raise the declared maximum to `99999` on a four-place model and
+`digitsOf` walks four places, drops the leading digit, and `12345` renders as
+*exactly* the same glyph as `2345` — a mark that looks perfectly valid and
+means the wrong number. Deriving the range makes that disagreement
+unrepresentable.
+
+The ceiling is **18 places**. Beyond that `10^n - 1` exceeds the exact range of
+a 64-bit integer and silently degrades to a float, losing the precision this
+whole document exists to protect. An implementation must refuse rather than
+round, and must never quietly hand back fewer places than were asked for.
 
 ## Intermediate representation
 
@@ -232,15 +277,15 @@ data. An implementation that hardcodes the tables is not wrong on output, but
 it has opted out of the mechanism that keeps the languages from drifting, and
 it will be the one that drifts.
 
-**`digitsOf(number: int) -> {ones, tens, hundreds, thousands}`**
-- Validate `0 <= number <= 9999`, else raise/throw.
-- `ones = number % 10`, `tens = floor(number/10) % 10`, `hundreds = floor(number/100) % 10`, `thousands = floor(number/1000) % 10`.
+**`digitsOf(number: int) -> {place: digit, ...}`**
+- Validate `0 <= number <= 10^count(places) - 1`, else raise/throw. The upper bound is derived from the model, never read from it.
+- Walk `places` in order with a divisor starting at 1 and multiplying by 10 each step: `digit = floor(number / divisor) % 10`. With the default four places that is exactly `ones`, `tens`, `hundreds`, `thousands`.
 
 **`segmentsFor(number: int) -> list<{quadrant, segment, x1, y1, x2, y2}>`**
-- Configurable geometry params with suggested defaults: `stemHeight=200`, `quadrantWidth=70`, `stemX=100`, `stemTopY=20`. (These defaults are baked into `fixtures/vectors.json` — an implementation can use different defaults internally, but must be able to reproduce the fixtures when given these same parameters.)
-- `midY = stemTopY + stemHeight/2`, `bottomY = stemTopY + stemHeight`.
-- For each quadrant: `topY = flipY ? midY : stemTopY`; `botY = flipY ? bottomY : midY`; `outerX = flipX ? stemX - quadrantWidth : stemX + quadrantWidth`.
-- For each active segment key for that quadrant's digit: linearly interpolate the local `(lx,ly)` endpoints into global coordinates using `stemX`, `outerX`, `topY`, `botY`, and append `{quadrant, segment, x1, y1, x2, y2}`.
+- Configurable geometry params with suggested defaults: `rowHeight=100`, `quadrantWidth=70`, `stemX=100`, `stemTopY=20`. `stemHeight = rowHeight * rows`, so a taller glyph keeps the same cell size rather than squashing. (These defaults are baked into `fixtures/vectors.json` — an implementation can use different defaults internally, but must be able to reproduce the fixtures when given these same parameters.)
+- For each place: `topY = stemTopY + row * rowHeight`; `botY = topY + rowHeight`; `outerX = side is left ? stemX - quadrantWidth : stemX + quadrantWidth`.
+- For each active segment key for that place's digit: linearly interpolate the local `(lx,ly)` endpoints into global coordinates using `stemX`, `outerX`, `topY`, `botY`, and append `{quadrant, segment, x1, y1, x2, y2}`.
+- With `rows = 2` this reduces to the historical geometry exactly: row 0 spans `stemTopY..midY` and row 1 `midY..bottomY`.
 
 **`stem() -> (x1, y1, x2, y2)`**
 - Fixed vertical line: `(stemX, stemTopY)` to `(stemX, stemTopY + stemHeight)`.
@@ -250,8 +295,8 @@ it will be the one that drifts.
 `segmentsFor` returns a **list, not a set**, and fixture compliance is
 order-sensitive. Two orderings are therefore part of the contract:
 
-- **Quadrants**, outer loop: `ones`, `tens`, `hundreds`, `thousands` — the
-  order of `places` in `model.json`.
+- **Places**, outer loop: the order of `places` in `model.json`, least
+  significant first — `ones`, `tens`, `hundreds`, `thousands` by default.
 - **Segments** within a quadrant, inner loop: `top`, `bottom`, `outer`,
   `diagDown`, `diagUp` — the order of `segments` in `model.json`, *not* the
   order the digit table happens to list them in.
@@ -329,6 +374,13 @@ entries — actual resolver output, not illustrative examples — for 15 numbers
 
 `stem` is a positional `[x1, y1, x2, y2]` array, and `0` confirms the empty
 case — stem only, zero segments.
+
+**`fixtures/vectors-wide.json`** carries the generalised contract: the same
+model at 1, 3 and 4 rows, each entry tagged with its `rows`. Without it an
+implementation could hardcode four places, reproduce every vector in
+`vectors.json`, and still be wrong about what the model declares. An
+implementation that only supports the default may skip this file, but it is
+then compliant with the historical system rather than with the model.
 
 It is generated, never hand-edited: `php-sigil/bin/vectors.php` writes it,
 and `php php-sigil/bin/vectors.php --check` exits non-zero when the committed

@@ -37,7 +37,7 @@ jobs:
 
             echo "── $impl"
 
-            for file in model.json fixtures/vectors.json; do
+            for file in model.json fixtures/vectors.json fixtures/vectors-wide.json; do
               if [ ! -f "$impl/$file" ]; then
                 echo "   MISSING  $impl/$file"
                 rc=1
@@ -80,16 +80,24 @@ jobs:
         run: |
           php -r '
             $m = json_decode(file_get_contents("model.json"), true, 512, JSON_THROW_ON_ERROR);
-            foreach (["version","range","places","geometryDefaults","segments","digitMap","quadrants"] as $k) {
+            foreach (["version","places","geometryDefaults","segments","digitMap"] as $k) {
               if (!isset($m[$k])) { fwrite(STDERR, "missing key: $k\n"); exit(1); }
             }
+            if (isset($m["range"])) { fwrite(STDERR, "range must be derived from places, not declared\n"); exit(1); }
             if (count($m["digitMap"]) !== 10) { fwrite(STDERR, "digitMap must have 10 entries\n"); exit(1); }
             $bits = count($m["segments"]);
             foreach ($m["digitMap"] as $d => $mask) {
               if ($mask < 0 || $mask >= (1 << $bits)) { fwrite(STDERR, "digit $d mask out of range\n"); exit(1); }
             }
+            if (count($m["places"]) > 18) { fwrite(STDERR, "more than 18 places cannot be held exactly in an int\n"); exit(1); }
+            $seen = [];
             foreach ($m["places"] as $p) {
-              if (!isset($m["quadrants"][$p])) { fwrite(STDERR, "place $p has no quadrant\n"); exit(1); }
+              foreach (["name","side","row"] as $k) { if (!isset($p[$k])) { fwrite(STDERR, "place missing $k\n"); exit(1); } }
+              if (!in_array($p["side"], ["left","right"], true)) { fwrite(STDERR, "bad side: {$p["side"]}\n"); exit(1); }
+              $spot = $p["side"] . ":" . $p["row"];
+              if (isset($seen[$spot])) { fwrite(STDERR, "two places share the spot $spot\n"); exit(1); }
+              $seen[$spot] = true;
             }
-            echo "model.json ok: ", $bits, " segments, ", count($m["places"]), " places\n";
+            $rows = max(array_column($m["places"], "row")) + 1;
+            printf("model.json ok: %d segments, %d places, %d rows, max %d\n", $bits, count($m["places"]), $rows, 10 ** count($m["places"]) - 1);
           '

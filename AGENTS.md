@@ -36,10 +36,11 @@ Before writing code in any implementation directory:
 ## Layout
 
 ```
-SPEC.md               the specification
-model.json            Tier 1 -- canonical definition
-fixtures/vectors.json Tier 2 -- canonical resolved output
-php-sigil/            submodule -> github.com/laxit-patel/php-sigil
+SPEC.md                    the specification
+model.json                 Tier 1 -- canonical definition
+fixtures/vectors.json      Tier 2 -- canonical output, default model
+fixtures/vectors-wide.json Tier 2 -- the same model at 1, 3 and 4 rows
+php-sigil/                 submodule -> github.com/laxit-patel/php-sigil
 ```
 
 `model.json` and `fixtures/vectors.json` here are **canonical**. Every
@@ -77,11 +78,16 @@ they all have to agree on.
 
 Checklist for the port itself:
 
-- [ ] `digitsOf` validates `0 <= n <= 9999` and throws/raises otherwise.
+- [ ] `digitsOf` derives its upper bound as `10^count(places) - 1` and
+      throws/raises outside it. Never read a declared range; never assume 9999.
 - [ ] `segmentsFor` emits quadrants in `model.json`'s `places` order and
       segments in its `segments` order — read from the file, not assumed.
 - [ ] `digitMap` is decoded as a bitmask (bit *i* = the *i*-th entry of
       `segments`), not as named arrays.
+- [ ] Places are read as `(side, row)`, so the implementation works at any row
+      count rather than assuming four. Verify with `fixtures/vectors-wide.json`.
+- [ ] Refuses more than 18 places rather than losing integer precision, and
+      never silently returns fewer places than asked for.
 - [ ] Coordinates compare **numerically** against the fixtures, not as strings.
 - [ ] The test suite loads `fixtures/vectors.json` itself rather than
       hand-copying values out of it.
